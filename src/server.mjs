@@ -1,3 +1,4 @@
+import './env.mjs';
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
@@ -63,7 +64,6 @@ async function parseJsonBody(req) {
     throw error;
   }
 }
-
 
 function dispatchRelease(input) {
   setImmediate(() => {
