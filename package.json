@@ -1,14 +1,15 @@
 {
   "name": "proofship",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "AI release agent that never says shipped until production proves it.",
+  "description": "AI release verification agent that never says shipped until production proves it.",
   "scripts": {
     "dev": "node --watch src/server.mjs",
     "start": "node src/server.mjs",
-    "test": "node --test",
-    "check": "for f in src/*.mjs; do node --check \"$f\"; done"
+    "test": "node --test --test-concurrency=1",
+    "check": "for f in src/*.mjs public/*.js test/*.mjs; do node --check \"$f\"; done",
+    "verify": "npm test && npm run check"
   },
   "engines": {
     "node": ">=20"

@@ -5,19 +5,18 @@ export function signWebhookBody(body, secret) {
 }
 
 export function verifyWebhookSignature({ body, signature, secret }) {
-  if (!secret) return { required: false, verified: false };
-  if (!signature) return { required: true, verified: false };
+  if (!secret) return { required: true, configured: false, verified: false };
+  if (!signature) return { required: true, configured: true, verified: false };
 
   const expected = signWebhookBody(body, secret);
   const expectedBuffer = Buffer.from(expected);
-  const actualBuffer = Buffer.from(signature);
-
+  const actualBuffer = Buffer.from(String(signature));
   if (expectedBuffer.length !== actualBuffer.length) {
-    return { required: true, verified: false };
+    return { required: true, configured: true, verified: false };
   }
-
   return {
     required: true,
+    configured: true,
     verified: crypto.timingSafeEqual(expectedBuffer, actualBuffer)
   };
 }

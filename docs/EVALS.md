@@ -1,46 +1,32 @@
-# ProofShip Evaluation Plan
+# ProofShip evaluation matrix
 
-ProofShip is evaluated against failure modes that commonly make release automation look successful when the real user outcome is wrong.
+ProofShip's core safety claim is intentionally narrow and testable:
+
+> A release must never become `VERIFIED` while deployment evidence is not ready, required production checks are missing, or any authoritative production check is failing.
+
+## Required scenarios
 
 | Scenario | Expected result |
 | --- | --- |
-| Healthy deployment | `VERIFIED` |
-| Vercel `READY` + checkout broken | `FAILED` + incident workflow + rollback attempt |
-| Deployment not `READY` | `BLOCKED`; never falsely verified |
-| LLM recommends approval while an authoritative check failed | `FAILED`; deterministic policy wins |
-| LLM unavailable | deterministic diagnosis fallback; production checks remain authoritative |
-| Slack or Linear credentials missing | transparent `simulated: true` action; never represented as live |
-| One external action fails | remaining external actions are still attempted and the release stays blocked |
-| Duplicate webhook / repeated release event | previous completed result returned; consequential actions are not repeated |
-| Same commit with a different deployment ID | treated as a new release verification |
-| Healthy release after a fix | `VERIFIED` only after a fresh successful run |
-| No target URL available | checks fail safely; release cannot be verified |
+| READY deployment + all required checks pass | `VERIFIED` |
+| Deployment is not READY | `BLOCKED` / investigate |
+| READY deployment + checkout regression | `FAILED` + incident workflow |
+| READY deployment + zero checks | `BLOCKED`, never verified |
+| LLM suggests approval while a check failed | deterministic policy still blocks |
+| LLM endpoint is unavailable/malformed | deterministic diagnosis fallback; checks remain authoritative |
+| Duplicate delivery for the same deployment | existing completed run returned; actions are not repeated |
+| Invalid or tampered generic webhook signature | rejected |
+| Invalid or tampered Vercel webhook signature | rejected |
+| Non-production Vercel deployment event | ignored |
+| One incident integration fails | remaining incident actions are still attempted |
+| Auto rollback disabled | rollback is recommended, not executed |
+| Rollback accepted | production checks are rerun; recovery is only reported if they pass |
+| Seeded bad release | release remains failed even when the previous production version is restored |
 
-## Invariants
+## What CI verifies
 
-1. No failed authoritative acceptance check may end in `VERIFIED`.
-2. Infrastructure `READY` is never sufficient by itself to approve a release.
-3. An LLM recommendation cannot override deterministic release policy.
-4. A tool failure must be visible in the trajectory and cannot be silently converted into success.
-5. Duplicate delivery of the same release event must not cause duplicate incidents, notifications, or rollbacks.
-6. Verification after a fix requires a fresh run against the production target.
+`npm test` covers policy, validation, acceptance checks, webhook verification/adaptation, idempotency, LLM fallback, and end-to-end simulated release behavior.
 
-## Automated coverage
+`npm run check` syntax-checks every source module, browser JavaScript file, and test.
 
-The repository currently includes automated tests for:
-
-- blocking deployments that are not ready;
-- blocking `READY` deployments with failed production checks;
-- verifying only when deployment and checks pass;
-- stable idempotency fingerprints for repeated events;
-- distinct fingerprints for distinct deployments;
-- explicit idempotency keys across differently shaped webhook retries.
-
-Run:
-
-```bash
-npm test
-npm run check
-```
-
-The evaluation suite will continue expanding toward end-to-end live integration scenarios.
+The bundled regression scenario is deterministic and deliberately creates a semantic release failure: deployment state is `READY`, but checkout does not satisfy its acceptance criterion. ProofShip must block that release.

@@ -1,23 +1,95 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ProofShip — Production proves the release</title>
-<link rel="stylesheet" href="/styles.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="ProofShip verifies production behavior before a release is declared successful." />
+  <title>ProofShip — Production proves the release</title>
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-<div class="shell">
-  <header><div><span class="logo">P</span><b>ProofShip</b></div><span class="pill">Multi-App Release Agent</span></header>
-  <main>
-    <section class="hero">
-      <div><p class="eyebrow">AI RELEASE RELIABILITY</p><h1>Your deploy isn't done when CI turns green.<br><span>It's done when production proves it.</span></h1><p>ProofShip inspects GitHub, verifies Vercel production behavior, creates a Linear incident, alerts Slack, and rolls back bad releases—with an evidence trail for every action.</p></div>
-      <div class="buttons"><button id="broken">Run seeded regression</button><button class="secondary" id="healthy">Run healthy release</button></div>
-    </section>
-    <section class="grid stats"><div><small>APPS</small><strong>4</strong><span>GitHub · Vercel · Linear · Slack</span></div><div><small>RULE</small><strong>0</strong><span>Unverified releases marked shipped</span></div><div><small>EVIDENCE</small><strong id="eventCount">—</strong><span>Traceable steps in latest run</span></div></section>
-    <section class="panel"><div class="panelHead"><div><p class="eyebrow">LATEST RELEASE</p><h2 id="status">No run yet</h2></div><span id="badge" class="status idle">IDLE</span></div><div id="summary" class="summary">Run the seeded regression to see ProofShip catch a release that Vercel reports as READY.</div><div id="timeline" class="timeline"></div></section>
-  </main>
-</div>
-<script src="/app.js"></script>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="logo">P</span><div><b>ProofShip</b><small>Release verification agent</small></div></div>
+      <div id="systemState" class="system-state"><span class="dot"></span><span>Loading system state…</span></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">PRODUCTION, NOT PROMISES</p>
+          <h1>Your deploy isn't done when CI turns green.<br><span>It's done when production proves it.</span></h1>
+          <p class="lede">ProofShip inspects the release, tests real production behavior, diagnoses regressions, coordinates GitHub, Vercel, Linear and Slack, and keeps the evidence for every decision.</p>
+          <div class="buttons">
+            <button id="broken">Run seeded regression</button>
+            <button class="secondary" id="healthy">Run healthy release</button>
+          </div>
+          <p class="demo-note">The included scenarios are deterministic. External actions stay simulated unless live demo integrations are explicitly enabled.</p>
+        </div>
+        <aside class="principle-card">
+          <span class="card-kicker">RELEASE PRINCIPLE</span>
+          <strong>READY ≠ VERIFIED</strong>
+          <p>Infrastructure readiness is one piece of evidence. User-facing acceptance checks decide whether the release is actually good.</p>
+          <div class="guardrails">
+            <span>Deterministic policy</span>
+            <span>Idempotent actions</span>
+            <span>Signed webhooks</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="metric-grid">
+        <article><small>CONNECTED APPS</small><strong>4</strong><span>GitHub · Vercel · Linear · Slack</span></article>
+        <article><small>FALSE APPROVAL TARGET</small><strong>0</strong><span>Failed checks may never become verified</span></article>
+        <article><small>EVIDENCE EVENTS</small><strong id="eventCount">—</strong><span>Traceable steps in latest run</span></article>
+        <article><small>RUN MODE</small><strong id="runMode">—</strong><span id="runSource">Waiting for a release</span></article>
+      </section>
+
+      <section class="workspace-grid">
+        <article class="panel release-panel">
+          <div class="panel-head">
+            <div><p class="eyebrow">LATEST RELEASE</p><h2 id="status">No run yet</h2></div>
+            <span id="badge" class="status idle">IDLE</span>
+          </div>
+          <p id="summary" class="summary">Run the seeded regression to watch ProofShip reject a release that infrastructure reports as ready.</p>
+          <div id="meta" class="meta-row"></div>
+        </article>
+
+        <article class="panel integrations-panel">
+          <div class="panel-head compact"><div><p class="eyebrow">INTEGRATIONS</p><h2>Connection state</h2></div></div>
+          <div id="integrations" class="integration-list"></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head compact"><div><p class="eyebrow">AUTHORITATIVE CHECKS</p><h2>Production evidence</h2></div><span id="checksScore" class="score">—</span></div>
+        <div id="checks" class="check-grid empty-state">No checks yet.</div>
+      </section>
+
+      <section class="workspace-grid lower-grid">
+        <article class="panel">
+          <div class="panel-head compact"><div><p class="eyebrow">AGENT ACTIONS</p><h2>Cross-app response</h2></div></div>
+          <div id="actions" class="action-list empty-state">No actions yet.</div>
+        </article>
+        <article class="panel">
+          <div class="panel-head compact"><div><p class="eyebrow">RECOVERY</p><h2>Service restoration</h2></div></div>
+          <div id="recovery" class="recovery-box empty-state">No recovery attempted.</div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head compact"><div><p class="eyebrow">TRAJECTORY</p><h2>Evidence trail</h2></div></div>
+        <div id="timeline" class="timeline empty-state">No trajectory yet.</div>
+      </section>
+
+      <section class="panel recent-panel">
+        <div class="panel-head compact"><div><p class="eyebrow">RECENT RUNS</p><h2>Verification history</h2></div></div>
+        <div id="recentRuns" class="run-list empty-state">No saved runs yet.</div>
+      </section>
+    </main>
+
+    <footer><span>ProofShip v1.0.0</span><span>Release authority belongs to production evidence.</span></footer>
+  </div>
+  <script src="/app.js"></script>
 </body>
 </html>

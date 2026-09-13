@@ -7,6 +7,5 @@ export function releaseFingerprint(input = {}) {
     input.deploymentId || '',
     input.targetUrl || ''
   ].join('|');
-
   return crypto.createHash('sha256').update(source).digest('hex');
 }
