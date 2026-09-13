@@ -4,6 +4,10 @@
 
 ProofShip is an AI release verification agent. It watches a deployment, verifies the production behavior users actually depend on, diagnoses failures, coordinates incident response across GitHub, Vercel, Linear, and Slack, and refuses to mark a release verified until authoritative checks pass.
 
+## Demo video
+
+Watch the ProofShip demo: [Google Drive](https://drive.google.com/file/d/1Z0Wv-8REfJJz44jWSZYRzlAw4LwAFHDB/view?usp=sharing)
+
 ## The problem
 
 CI and deployment platforms answer an important question: **did the software build and deploy?** They do not necessarily answer: **does the released user journey actually work?**
