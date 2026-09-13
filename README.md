@@ -2,24 +2,61 @@
 
 **Your deploy isn't done when CI turns green. It's done when production proves it.**
 
-ProofShip is a multi-app AI release agent built for the Multi-App AI Agent Hackathon. It watches a release, inspects the GitHub commit, checks Vercel deployment state, executes production acceptance criteria, asks an LLM to diagnose failures, then takes policy-gated action across Linear, GitHub, Slack, and Vercel.
+ProofShip is an AI release verification agent that checks whether a deployment actually works for users before declaring it successful. It inspects the release, verifies production behavior, diagnoses failures, and takes policy-gated action across GitHub, Vercel, Linear, and Slack.
 
-## Why it exists
+## Why ProofShip
 
-A deployment platform can report `READY` while a critical user journey is broken. ProofShip treats infrastructure success as evidence—not as proof. A release is marked `VERIFIED` only after authoritative production checks pass.
+A deployment platform can report `READY` while a critical user journey is still broken. CI can be green while checkout, login, onboarding, or another production workflow fails after release.
 
-## Multi-app workflow
+ProofShip treats infrastructure success as evidence—not as proof.
 
-1. **GitHub** — inspect the release commit / PR and attach production evidence.
-2. **Vercel** — inspect deployment status and optionally roll back a bad deployment.
-3. **Linear** — create a structured incident for a detected regression.
-4. **Slack** — notify the team with the evidence and incident reference.
+A release is marked `VERIFIED` only after authoritative production checks pass.
 
-The agent keeps an explicit trajectory so every consequential action is inspectable.
+## What it does
+
+ProofShip can:
+
+- inspect the GitHub commit or pull request behind a release;
+- read Vercel deployment state;
+- execute production acceptance checks against the deployed application;
+- use an LLM to diagnose likely causes of failures;
+- apply deterministic release policy that the LLM cannot override;
+- create a Linear incident when a regression is detected;
+- attach evidence to GitHub;
+- notify the team in Slack;
+- initiate a Vercel rollback when configured;
+- retain an explicit evidence and action trail for every run.
+
+## Core workflow
+
+1. **GitHub** — identify the release, commit, or pull request and collect change context.
+2. **Vercel** — inspect the deployment and production target.
+3. **Production verification** — run acceptance checks against the live application.
+4. **Diagnosis** — summarize the failure and likely cause.
+5. **Policy** — decide whether the release may be verified, blocked, or escalated.
+6. **Linear** — create a structured incident for confirmed regressions.
+7. **Slack** — notify the team with evidence and current status.
+8. **Recovery** — optionally trigger rollback or wait for a fix.
+9. **Reverification** — test production again before closing the incident.
+
+## Reliability model
+
+ProofShip intentionally separates AI reasoning from release authority.
+
+The LLM can help diagnose what happened, but deterministic policy controls consequential decisions.
+
+Core rules:
+
+- Never mark a release verified merely because Vercel says `READY`.
+- Never mark a release verified while an authoritative acceptance check is failing.
+- Tool errors are evidence, never silently converted into success.
+- The LLM cannot override a failed critical check.
+- Every consequential action is recorded in the run trajectory.
+- A release can move to `VERIFIED` only after the required checks pass.
 
 ## Fast start
 
-Requires Node 20+ and has **zero npm dependencies**.
+Requires Node.js 20+ and currently has zero npm dependencies.
 
 ```bash
 cp .env.example .env
@@ -27,41 +64,107 @@ npm test
 npm start
 ```
 
-Open `http://localhost:8787` and click **Run seeded regression**.
+Open:
 
-The demo intentionally produces this situation:
+```text
+http://localhost:8787
+```
 
-- Vercel/infrastructure: `READY` ✅
+The included example lets you run both a healthy release and a seeded regression.
+
+### Seeded regression
+
+The regression scenario intentionally produces:
+
+- infrastructure/deployment state: `READY` ✅
 - homepage: PASS ✅
 - health endpoint: PASS ✅
 - checkout: FAIL ❌
 
-ProofShip blocks the release, creates/records an incident, posts evidence, and initiates a rollback. With no external credentials configured, integrations run in transparent `simulated: true` mode so the demo is deterministic. Add real credentials to make each integration live.
+ProofShip should block the release rather than trusting infrastructure status alone.
 
-## Real integration setup
+When external credentials are not configured, integrations run in transparent `simulated: true` mode so the local example remains deterministic. Add real credentials to make each integration live.
+
+## Integration setup
 
 ### GitHub
-Create a token scoped only to the demo repository with read access to contents/commits and write access to issues/PR comments. Set `GITHUB_TOKEN`, `DEMO_REPO`, and `DEMO_PR_NUMBER`.
+
+Create a token scoped only to the repository ProofShip should inspect.
+
+Recommended permissions:
+
+- repository contents / commits: read;
+- issues or pull request comments: write, if you want ProofShip to attach evidence.
+
+Environment variables:
+
+```text
+GITHUB_TOKEN=
+DEMO_REPO=owner/repository
+DEMO_PR_NUMBER=
+```
 
 ### Vercel
-Create a Vercel API token and set `VERCEL_TOKEN` and `VERCEL_PROJECT_ID`. Pass a real deployment ID to `/api/run` for live runs.
+
+Create a Vercel API token and provide the project identifier.
+
+```text
+VERCEL_TOKEN=
+VERCEL_PROJECT_ID=
+```
+
+A real deployment ID can be passed to `/api/run` for live verification.
 
 ### Slack
-Create an Incoming Webhook for a dedicated `#proofship-demo` channel and set `SLACK_WEBHOOK_URL`.
+
+Create an Incoming Webhook for the channel where release incidents should be posted.
+
+```text
+SLACK_WEBHOOK_URL=
+```
 
 ### Linear
-Create a personal API key and get the target team UUID. Set `LINEAR_API_KEY` and `LINEAR_TEAM_ID`.
+
+Create a Linear API key and obtain the UUID of the team that should receive incidents.
+
+```text
+LINEAR_API_KEY=
+LINEAR_TEAM_ID=
+```
 
 ### LLM
-Set an OpenAI-compatible endpoint using `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_MODEL`. LLM reasoning diagnoses the failure, while deterministic policy code decides whether the release may be approved. The LLM cannot override failed authoritative checks.
+
+ProofShip supports an OpenAI-compatible endpoint.
+
+```text
+LLM_API_KEY=
+LLM_BASE_URL=
+LLM_MODEL=
+```
+
+AI reasoning is used for diagnosis. Deterministic policy still decides whether a release can be approved.
 
 ## API
 
-`POST /api/demo?mode=broken` — deterministic regression scenario.
+### Run the included regression scenario
 
-`POST /api/demo?mode=healthy` — deterministic successful release.
+```text
+POST /api/demo?mode=broken
+```
 
-`POST /api/run` — run against supplied release data:
+### Run the included healthy scenario
+
+```text
+POST /api/demo?mode=healthy
+```
+
+### Verify a real release
+
+```text
+POST /api/run
+```
+
+Example payload:
 
 ```json
 {
@@ -73,34 +176,88 @@ Set an OpenAI-compatible endpoint using `LLM_API_KEY`, `LLM_BASE_URL`, and `LLM_
   "targetUrl": "https://production.example.com",
   "goal": "Prove checkout works after deployment",
   "checks": [
-    { "name": "Checkout completes", "path": "/api/demo-checkout", "expectStatus": 200, "contains": "PAYMENT_CONFIRMED", "critical": true }
+    {
+      "name": "Checkout completes",
+      "path": "/api/demo-checkout",
+      "expectStatus": 200,
+      "contains": "PAYMENT_CONFIRMED",
+      "critical": true
+    }
   ]
 }
 ```
 
-## Reliability rules
+## Example verification flow
 
-- Never mark a release verified merely because Vercel says `READY`.
-- Never mark a release verified while an authoritative acceptance check is failing.
-- Tool errors are evidence, never silently converted into success.
-- The LLM proposes a diagnosis; deterministic policy gates consequential actions.
-- Every run retains evidence, reasoning, actions, and final status.
+A deployment reports `READY`, but checkout is broken.
 
-## Hackathon demo script
+ProofShip:
 
-1. Show Vercel/seeded release as `READY`.
-2. Run **seeded regression**.
-3. Point out checkout failure while infrastructure stayed green.
-4. Show ProofShip's diagnosis and action trail.
-5. Show Linear + Slack + GitHub effects (live if credentials are connected).
-6. Run **healthy release**.
-7. Show `VERIFIED IN PRODUCTION` only after all checks pass.
+1. records the deployment state;
+2. executes the configured production checks;
+3. detects the checkout regression;
+4. refuses to mark the release verified;
+5. records a diagnosis and evidence;
+6. creates or simulates a Linear incident;
+7. posts or simulates a Slack notification;
+8. attaches or simulates GitHub evidence;
+9. initiates or simulates recovery action;
+10. requires a fresh successful verification before the release can become `VERIFIED`.
 
-## Next upgrades
+## Current architecture
 
-- GitHub/Vercel webhooks for automatic trigger on production deployment.
-- Playwright browser journeys rather than HTTP/text acceptance criteria.
-- Baseline comparison to avoid blaming a new release for pre-existing failures.
-- Idempotency keys for external actions.
+```text
+Release event
+   ↓
+GitHub context
+   ↓
+Vercel deployment state
+   ↓
+Production checks
+   ↓
+Evidence collection
+   ↓
+LLM diagnosis
+   ↓
+Deterministic release policy
+   ↓
+GitHub / Linear / Slack / Vercel actions
+   ↓
+Reverification
+   ↓
+VERIFIED or BLOCKED
+```
+
+## Tests and CI
+
+Run the local tests:
+
+```bash
+npm test
+```
+
+Run syntax checks:
+
+```bash
+npm run check
+```
+
+GitHub Actions runs both on each push to `main`.
+
+## Roadmap
+
+- GitHub and Vercel webhooks for automatic release triggers.
+- Playwright browser journeys for full user-flow verification.
+- Baseline comparison to distinguish new regressions from pre-existing failures.
+- Idempotency keys for all consequential external actions.
 - Signed webhook verification.
-- Human approval threshold for rollback in production environments.
+- Human approval thresholds for production rollback.
+- Configurable release policies per repository and environment.
+- Persistent run history and searchable evidence.
+- Additional deployment providers and incident-management integrations.
+
+## Project philosophy
+
+ProofShip is built around one principle:
+
+> A deployment is not successful because the deployment system says it is. It is successful when the production behavior users depend on has been verified.
