@@ -1,0 +1,4 @@
+.env
+.proofship/
+node_modules/
+.DS_Store
