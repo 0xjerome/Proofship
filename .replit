@@ -1,0 +1,2 @@
+run = "node src/server.mjs"
+entrypoint = "src/server.mjs"
