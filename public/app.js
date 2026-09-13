@@ -175,11 +175,14 @@ function renderIntegrations(config) {
     row.append(copy, textElement('span', `connection ${info.mode === 'live' ? 'live' : 'simulated'}`, String(info.mode || 'unknown').toUpperCase()));
     root.append(row);
   }
-  const configured = entries.filter(([, info]) => info.mode === 'live').length;
+
+  const appNames = new Set(['github', 'vercel', 'linear', 'slack']);
+  const liveApps = entries.filter(([name, info]) => appNames.has(name) && info.mode === 'live').length;
+  const llmMode = config.integrations?.llm?.mode === 'live' ? 'AI diagnosis live' : 'deterministic diagnosis';
   const system = $('#systemState');
   clear(system);
   system.append(textElement('span', 'dot', ''));
-  system.append(textElement('span', '', `${configured}/${entries.length} live integrations · CI-ready core`));
+  system.append(textElement('span', '', `${liveApps}/4 app integrations live · ${llmMode}`));
 }
 
 async function loadConfig() {
