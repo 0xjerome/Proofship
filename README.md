@@ -6,7 +6,7 @@ ProofShip is an AI release verification agent. It watches a deployment, verifies
 
 ## Demo video
 
-Watch the ProofShip demo: [Google Drive](https://drive.google.com/file/d/1Z0Wv-8REfJJz44jWSZYRzlAw4LwAFHDB/view?usp=sharing)
+Watch the ProofShip demo: [Google Drive](https://drive.google.com/file/d/1CqYyQ2z2c57hjafKu_JWWhINP-p452EM/view?usp=sharing)
 
 ## The problem
 
