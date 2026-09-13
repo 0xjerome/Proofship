@@ -26,3 +26,9 @@ export async function getRun(id) {
   const runs = await listRuns();
   return runs.find((r) => r.id === id) || null;
 }
+
+export async function findRunByFingerprint(fingerprint) {
+  if (!fingerprint) return null;
+  const runs = await listRuns();
+  return runs.find((r) => r.fingerprint === fingerprint && r.status !== 'running') || null;
+}
