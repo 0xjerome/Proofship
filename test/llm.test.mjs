@@ -11,9 +11,23 @@ test('uses deterministic diagnosis when no LLM key exists', async () => {
   delete process.env.LLM_API_KEY;
   try {
     const { diagnoseWithLLM } = await importFresh();
-    const result = await diagnoseWithLLM({ failedChecks: [{ detail: 'checkout failed' }] });
+    const result = await diagnoseWithLLM({ failedChecks: [{ detail: 'checkout failed' }], deployment: { ready: true } });
     assert.equal(result.source, 'deterministic-fallback');
     assert.equal(result.recommendedAction, 'rollback');
+  } finally {
+    if (previous == null) delete process.env.LLM_API_KEY; else process.env.LLM_API_KEY = previous;
+  }
+});
+
+test('healthy deterministic diagnosis agrees with passing production evidence', async () => {
+  const previous = process.env.LLM_API_KEY;
+  delete process.env.LLM_API_KEY;
+  try {
+    const { diagnoseWithLLM } = await importFresh();
+    const result = await diagnoseWithLLM({ failedChecks: [], deployment: { ready: true } });
+    assert.equal(result.source, 'deterministic-fallback');
+    assert.equal(result.recommendedAction, 'approve');
+    assert.match(result.summary, /all configured production acceptance checks passed/i);
   } finally {
     if (previous == null) delete process.env.LLM_API_KEY; else process.env.LLM_API_KEY = previous;
   }
@@ -28,7 +42,7 @@ test('falls back safely when a configured LLM returns malformed output', async (
   process.env.LLM_BASE_URL = `http://127.0.0.1:${port}`;
   try {
     const { diagnoseWithLLM } = await importFresh();
-    const result = await diagnoseWithLLM({ failedChecks: [{ detail: 'checkout failed' }] });
+    const result = await diagnoseWithLLM({ failedChecks: [{ detail: 'checkout failed' }], deployment: { ready: true } });
     assert.equal(result.source, 'deterministic-fallback');
     assert.match(result.fallbackReason, /LLM did not return JSON/i);
   } finally {
