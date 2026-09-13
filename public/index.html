@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ProofShip — Production proves the release</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<div class="shell">
+  <header><div><span class="logo">P</span><b>ProofShip</b></div><span class="pill">Multi-App Release Agent</span></header>
+  <main>
+    <section class="hero">
+      <div><p class="eyebrow">AI RELEASE RELIABILITY</p><h1>Your deploy isn't done when CI turns green.<br><span>It's done when production proves it.</span></h1><p>ProofShip inspects GitHub, verifies Vercel production behavior, creates a Linear incident, alerts Slack, and rolls back bad releases—with an evidence trail for every action.</p></div>
+      <div class="buttons"><button id="broken">Run seeded regression</button><button class="secondary" id="healthy">Run healthy release</button></div>
+    </section>
+    <section class="grid stats"><div><small>APPS</small><strong>4</strong><span>GitHub · Vercel · Linear · Slack</span></div><div><small>RULE</small><strong>0</strong><span>Unverified releases marked shipped</span></div><div><small>EVIDENCE</small><strong id="eventCount">—</strong><span>Traceable steps in latest run</span></div></section>
+    <section class="panel"><div class="panelHead"><div><p class="eyebrow">LATEST RELEASE</p><h2 id="status">No run yet</h2></div><span id="badge" class="status idle">IDLE</span></div><div id="summary" class="summary">Run the seeded regression to see ProofShip catch a release that Vercel reports as READY.</div><div id="timeline" class="timeline"></div></section>
+  </main>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
