@@ -4,6 +4,7 @@ import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runReleaseAgent } from './agent.mjs';
 import { getRun, listRuns } from './store.mjs';
+import { verifyWebhookSignature } from './webhook.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -13,9 +14,14 @@ function json(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-async function body(req) {
+async function rawBody(req) {
   let data = '';
   for await (const chunk of req) data += chunk;
+  return data;
+}
+
+async function body(req) {
+  const data = await rawBody(req);
   return data ? JSON.parse(data) : {};
 }
 
@@ -47,6 +53,30 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && url.pathname.startsWith('/api/runs/')) {
     const run = await getRun(url.pathname.split('/').pop());
     return json(res, run ? 200 : 404, run || { error: 'not found' });
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/webhooks/release') {
+    const raw = await rawBody(req);
+    const verification = verifyWebhookSignature({
+      body: raw,
+      signature: req.headers['x-proofship-signature'],
+      secret: process.env.PROOFSHIP_WEBHOOK_SECRET
+    });
+
+    if (verification.required && !verification.verified) {
+      return json(res, 401, { error: 'Invalid webhook signature.' });
+    }
+
+    let payload;
+    try {
+      payload = raw ? JSON.parse(raw) : {};
+    } catch {
+      return json(res, 400, { error: 'Webhook body must be valid JSON.' });
+    }
+
+    payload.idempotencyKey = payload.idempotencyKey || req.headers['x-proofship-event-id'] || payload.eventId;
+    const run = await runReleaseAgent(payload);
+    return json(res, 200, { webhook: verification, run });
   }
 
   if (req.method === 'POST' && url.pathname === '/api/run') {
