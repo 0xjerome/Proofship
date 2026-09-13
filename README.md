@@ -25,19 +25,24 @@ ProofShip can:
 - attach evidence to GitHub;
 - notify the team in Slack;
 - initiate a Vercel rollback when configured;
+- deduplicate repeated release events before consequential actions are repeated;
+- continue attempting remaining incident actions when one external integration fails;
+- accept signed automatic release webhooks;
 - retain an explicit evidence and action trail for every run.
 
 ## Core workflow
 
-1. **GitHub** — identify the release, commit, or pull request and collect change context.
-2. **Vercel** — inspect the deployment and production target.
-3. **Production verification** — run acceptance checks against the live application.
-4. **Diagnosis** — summarize the failure and likely cause.
-5. **Policy** — decide whether the release may be verified, blocked, or escalated.
-6. **Linear** — create a structured incident for confirmed regressions.
-7. **Slack** — notify the team with evidence and current status.
-8. **Recovery** — optionally trigger rollback or wait for a fix.
-9. **Reverification** — test production again before closing the incident.
+1. **Release event** — receive a manual API request or an automatic signed webhook.
+2. **GitHub** — identify the release, commit, or pull request and collect change context.
+3. **Vercel** — inspect the deployment and production target.
+4. **Production verification** — run acceptance checks against the live application.
+5. **Diagnosis** — summarize the failure and likely cause.
+6. **Policy** — decide whether the release may be verified, blocked, or escalated.
+7. **Linear** — create a structured incident for confirmed regressions.
+8. **GitHub** — attach release evidence to the relevant issue or pull request.
+9. **Slack** — notify the team with evidence and current status.
+10. **Recovery** — optionally trigger rollback or wait for a fix.
+11. **Reverification** — test production again before closing the incident.
 
 ## Reliability model
 
@@ -52,6 +57,8 @@ Core rules:
 - Tool errors are evidence, never silently converted into success.
 - The LLM cannot override a failed critical check.
 - Every consequential action is recorded in the run trajectory.
+- Duplicate release events must not create duplicate incidents, notifications, or rollbacks.
+- Failure of one external incident action must not prevent the remaining actions from being attempted.
 - A release can move to `VERIFIED` only after the required checks pass.
 
 ## Fast start
@@ -187,6 +194,38 @@ Example payload:
 }
 ```
 
+### Trigger verification automatically
+
+ProofShip exposes:
+
+```text
+POST /api/webhooks/release
+```
+
+The endpoint accepts the same normalized release payload as `/api/run`.
+
+For duplicate protection, send a stable event identifier using either:
+
+```text
+X-ProofShip-Event-Id: deployment-event-123
+```
+
+or include:
+
+```json
+{
+  "eventId": "deployment-event-123"
+}
+```
+
+When `PROOFSHIP_WEBHOOK_SECRET` is configured, webhook bodies must include an HMAC-SHA256 signature:
+
+```text
+X-ProofShip-Signature: sha256=<hex-digest>
+```
+
+The digest is computed from the exact raw request body using `PROOFSHIP_WEBHOOK_SECRET`.
+
 ## Example verification flow
 
 A deployment reports `READY`, but checkout is broken.
@@ -207,7 +246,9 @@ ProofShip:
 ## Current architecture
 
 ```text
-Release event
+Release event / signed webhook
+   ↓
+Idempotency guard
    ↓
 GitHub context
    ↓
@@ -236,7 +277,7 @@ Run the local tests:
 npm test
 ```
 
-Run syntax checks:
+Run syntax checks across every source module:
 
 ```bash
 npm run check
@@ -244,16 +285,19 @@ npm run check
 
 GitHub Actions runs both on each push to `main`.
 
+The current automated tests cover release policy, duplicate-event fingerprints, and signed webhook verification.
+
+See [`docs/EVALS.md`](docs/EVALS.md) for the broader evaluation matrix.
+
 ## Roadmap
 
-- GitHub and Vercel webhooks for automatic release triggers.
+- Native provider-specific webhook adapters for GitHub and deployment platforms.
 - Playwright browser journeys for full user-flow verification.
 - Baseline comparison to distinguish new regressions from pre-existing failures.
-- Idempotency keys for all consequential external actions.
-- Signed webhook verification.
+- Persistent idempotency storage suitable for horizontally scaled deployments.
 - Human approval thresholds for production rollback.
 - Configurable release policies per repository and environment.
-- Persistent run history and searchable evidence.
+- Persistent run history and searchable evidence backed by a production database.
 - Additional deployment providers and incident-management integrations.
 
 ## Project philosophy
