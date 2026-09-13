@@ -6,13 +6,36 @@ function extractJson(text) {
 
 function fallbackDiagnosis(input, fallbackReason = null) {
   const firstFailure = input.failedChecks?.[0];
+  const failedCount = input.failedChecks?.length || 0;
+  const deploymentReady = input.deployment?.ready;
+
+  let cause;
+  let summary;
+  let recommendedAction;
+  let confidence;
+
+  if (failedCount > 0) {
+    cause = firstFailure?.detail || 'A production acceptance check failed.';
+    summary = `Infrastructure may be ready, but ${failedCount} production acceptance check(s) failed.`;
+    recommendedAction = 'rollback';
+    confidence = 0.76;
+  } else if (deploymentReady === false) {
+    cause = 'The deployment is not ready for production verification.';
+    summary = 'ProofShip cannot verify the release because deployment readiness has not been established.';
+    recommendedAction = 'investigate';
+    confidence = 0.9;
+  } else {
+    cause = 'No production regression was detected by the configured acceptance checks.';
+    summary = 'All configured production acceptance checks passed; deterministic diagnosis found no release regression.';
+    recommendedAction = 'approve';
+    confidence = 0.9;
+  }
+
   return {
-    cause: firstFailure?.detail || 'Production verification did not satisfy the release policy.',
-    confidence: 0.76,
-    summary: input.failedChecks?.length
-      ? `Infrastructure may be ready, but ${input.failedChecks.length} production acceptance check(s) failed.`
-      : 'ProofShip could not establish enough evidence to verify the release.',
-    recommendedAction: input.failedChecks?.length ? 'rollback' : 'investigate',
+    cause,
+    confidence,
+    summary,
+    recommendedAction,
     source: 'deterministic-fallback',
     ...(fallbackReason ? { fallbackReason } : {})
   };
