@@ -4,6 +4,26 @@
   "private": true,
   "type": "module",
   "description": "AI release verification agent that never says shipped until production proves it.",
+  "license": "Apache-2.0",
+  "author": "Jerome Ssenyonga",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xjerome/Proofship.git"
+  },
+  "bugs": {
+    "url": "https://github.com/0xjerome/Proofship/issues"
+  },
+  "homepage": "https://github.com/0xjerome/Proofship#readme",
+  "keywords": [
+    "deployment",
+    "release",
+    "verification",
+    "devops",
+    "production",
+    "agent",
+    "vercel",
+    "github"
+  ],
   "scripts": {
     "dev": "node --watch src/server.mjs",
     "start": "node src/server.mjs",

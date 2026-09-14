@@ -4,6 +4,8 @@
 
 ProofShip is an AI release verification agent. It watches a deployment, verifies the production behavior users actually depend on, diagnoses failures, coordinates incident response across GitHub, Vercel, Linear, and Slack, and refuses to mark a release verified until authoritative checks pass.
 
+ProofShip is open source under the [Apache License 2.0](LICENSE). Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md), and report security issues according to [SECURITY.md](SECURITY.md).
+
 ## Demo video
 
 Watch the ProofShip demo: [Google Drive](https://drive.google.com/file/d/1CqYyQ2z2c57hjafKu_JWWhINP-p452EM/view?usp=sharing)
@@ -322,6 +324,18 @@ Release event / Vercel webhook
             ↓
  VERIFIED / FAILED / BLOCKED
 ```
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Run `npm run verify` before submitting changes.
+
+## Security
+
+Please do not disclose vulnerabilities in public issues. Follow the private reporting guidance in [SECURITY.md](SECURITY.md).
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
 
 ## Project principle
 
